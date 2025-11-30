@@ -146,8 +146,28 @@ export const scanUrl = async (url) => {
         const text = await response.text();
 
         // Parse HTML
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
+        let doc;
+        if (typeof DOMParser !== 'undefined') {
+            const parser = new DOMParser();
+            doc = parser.parseFromString(text, 'text/html');
+        } else {
+            // Node environment fallback using jsdom
+            try {
+                const { JSDOM } = await import('jsdom');
+                const dom = new JSDOM(text, { url });
+                doc = dom.window.document;
+            } catch (e) {
+                console.error('JSDOM not available, falling back to basic mock', e);
+                // Basic mock for environment without JSDOM (though we should install it)
+                // This is risky but better than crashing. 
+                // However, for the user's issue (0 passed/0 violations), it's likely failing silently in browser too?
+                // No, the user sees "Compliant | 0 Passed | 0 Violations".
+                // If it was an error, they'd see the error message.
+                // If they see 0/0, it means scanDocument ran but found nothing.
+                // This implies dgaRules might be empty or doc is empty.
+                throw new Error('DOMParser not available and JSDOM failed');
+            }
+        };
 
         // Scan the document with page URL
         const result = scanDocument(doc, url);
