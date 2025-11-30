@@ -395,6 +395,43 @@ const DGACompliance = () => {
                                                         <p style={{ marginBottom: '0.75rem' }}>
                                                             <strong>Category:</strong> {violation.category} | <strong>Severity:</strong> {violation.severity}
                                                         </p>
+
+                                                        {/* Violation Reason */}
+                                                        {violation.violationReason && (
+                                                            <div style={{
+                                                                marginBottom: '1rem',
+                                                                padding: '1rem',
+                                                                backgroundColor: 'var(--error-100)',
+                                                                borderRadius: 'var(--radius-sm)',
+                                                                border: '1px solid var(--error-300)'
+                                                            }}>
+                                                                <p style={{ fontWeight: '600', marginBottom: '0.5rem', color: 'var(--error-800)' }}>
+                                                                    ❌ What's Wrong:
+                                                                </p>
+                                                                <p style={{ color: 'var(--error-700)', fontSize: '0.95rem' }}>
+                                                                    {violation.violationReason}
+                                                                </p>
+                                                            </div>
+                                                        )}
+
+                                                        {/* How to Fix */}
+                                                        {violation.howToFix && (
+                                                            <div style={{
+                                                                marginBottom: '1rem',
+                                                                padding: '1rem',
+                                                                backgroundColor: 'var(--info-50)',
+                                                                borderRadius: 'var(--radius-sm)',
+                                                                border: '1px solid var(--info-300)'
+                                                            }}>
+                                                                <p style={{ fontWeight: '600', marginBottom: '0.5rem', color: 'var(--info-800)' }}>
+                                                                    💡 How to Fix:
+                                                                </p>
+                                                                <p style={{ color: 'var(--info-700)', fontSize: '0.95rem' }}>
+                                                                    {violation.howToFix}
+                                                                </p>
+                                                            </div>
+                                                        )}
+
                                                         {violation.affectedPages && violation.affectedPages.length > 0 && (
                                                             <div style={{ marginBottom: '0.75rem' }}>
                                                                 <strong>Affected Pages ({violation.affectedPages.length}):</strong>

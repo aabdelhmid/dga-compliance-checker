@@ -26,13 +26,38 @@ export const scanDocument = (doc, pageUrl = null) => {
         if (rule.globalCheck) {
             // Global check (e.g., presence of element)
             try {
-                result = rule.globalCheck(doc);
+                const checkResult = rule.globalCheck(doc);
+
+                // Support both boolean and object return values
+                result = typeof checkResult === 'boolean' ? checkResult : checkResult?.passed;
+
+                if (!result) {
+                    const violationReason = typeof checkResult === 'object' ? checkResult.reason : null;
+                    const howToFix = typeof checkResult === 'object' ? checkResult.howToFix : null;
+
+                    violations.push({
+                        id: rule.id,
+                        description: rule.description,
+                        severity: rule.severity,
+                        category: rule.category,
+                        type: rule.type,
+                        requirements: rule.requirements,
+                        pageUrl: pageUrl || (typeof window !== 'undefined' && window.location.href) || '',
+                        preview: doc.documentElement ? doc.documentElement.outerHTML.substring(0, 1000) : 'Document Structure Missing',
+                        violationReason: violationReason || `Rule #${rule.id} global check failed`,
+                        howToFix: howToFix || 'Review requirements and update implementation to match DGA standards'
+                    });
+                } else {
+                    passed.push({
+                        id: rule.id,
+                        description: rule.description,
+                        severity: rule.severity,
+                        category: rule.category,
+                        type: rule.type
+                    });
+                }
             } catch (e) {
                 console.error(`Error in globalCheck for rule ${rule.id}:`, e);
-                result = false;
-            }
-
-            if (!result) {
                 violations.push({
                     id: rule.id,
                     description: rule.description,
@@ -41,15 +66,9 @@ export const scanDocument = (doc, pageUrl = null) => {
                     type: rule.type,
                     requirements: rule.requirements,
                     pageUrl: pageUrl || (typeof window !== 'undefined' && window.location.href) || '',
-                    preview: doc.documentElement ? doc.documentElement.outerHTML.substring(0, 1000) : 'Document Structure Missing'
-                });
-            } else {
-                passed.push({
-                    id: rule.id,
-                    description: rule.description,
-                    severity: rule.severity,
-                    category: rule.category,
-                    type: rule.type
+                    preview: `Error during check: ${e.message}`,
+                    violationReason: `Check failed with error: ${e.message}`,
+                    howToFix: 'Review rule implementation and ensure proper DOM structure'
                 });
             }
         } else if (rule.selector && rule.check) {
@@ -57,14 +76,27 @@ export const scanDocument = (doc, pageUrl = null) => {
             const elements = doc.querySelectorAll(rule.selector);
             let allPass = true;
             let preview = null;
+            let violationReason = null;
+            let howToFix = null;
 
             if (elements.length > 0) {
                 elements.forEach(element => {
                     try {
-                        if (!rule.check(element)) {
+                        const checkResult = rule.check(element);
+
+                        // Support both boolean and object return values
+                        const passed = typeof checkResult === 'boolean' ? checkResult : checkResult?.passed;
+
+                        if (!passed) {
                             allPass = false;
                             if (!preview) {
                                 preview = element.outerHTML.substring(0, 1000);
+                            }
+
+                            // Capture violation reason and how-to-fix if provided
+                            if (typeof checkResult === 'object') {
+                                violationReason = violationReason || checkResult.reason;
+                                howToFix = howToFix || checkResult.howToFix;
                             }
                         }
                     } catch (e) {
@@ -73,14 +105,8 @@ export const scanDocument = (doc, pageUrl = null) => {
                     }
                 });
             } else {
-                // If selector not found, it might be a failure depending on the rule
-                // But usually selector rules imply "if element exists, check it" OR "element must exist"
-                // For now, if selector finds nothing, we assume pass unless it's a "must exist" rule handled by globalCheck
-                // Actually, many rules are "verify X attribute on Y element". If Y doesn't exist, is it a pass?
-                // Let's assume pass for now unless specific logic says otherwise.
-                // Wait, previous implementation might have handled this differently.
-                // Let's stick to the logic: if elements found, check them. If any fail, rule fails.
-                // If no elements found, rule passes (vacuously true).
+                // If selector not found, assume pass (component doesn't exist)
+                // This prevents false positives for optional components
                 allPass = true;
             }
 
@@ -93,7 +119,9 @@ export const scanDocument = (doc, pageUrl = null) => {
                     type: rule.type,
                     requirements: rule.requirements,
                     pageUrl: pageUrl || (typeof window !== 'undefined' && window.location.href) || '',
-                    preview: preview
+                    preview: preview,
+                    violationReason: violationReason || `Rule #${rule.id} check failed`,
+                    howToFix: howToFix || 'Review requirements and update implementation to match DGA standards'
                 });
             } else {
                 passed.push({

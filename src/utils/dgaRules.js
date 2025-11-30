@@ -310,34 +310,43 @@ export const dgaRules = [
         selector: 'a',
         check: (element) => {
             if (typeof window !== 'undefined') {
+                const issues = [];
+                const style = window.getComputedStyle(element);
+                const textDecoration = style.textDecorationLine || style.textDecoration;
+                const color = style.color;
+
                 // Check 1: Hostname for external links
                 if (element.hostname && element.hostname !== window.location.hostname) {
                     // Should have icon (hard to check automatically without robust heuristic)
                 }
 
-                // Check 2: Styling (Rule 62 merged)
-                const style = window.getComputedStyle(element);
-                const textDecoration = style.textDecorationLine || style.textDecoration;
-                const color = style.color;
-
+                // Check 2: Styling
                 // Fail if no underline AND color is black/inherit (simplified)
                 if ((!textDecoration || textDecoration === 'none') && (color === 'rgb(0, 0, 0)' || color === 'inherit')) {
-                    if (element.closest('p')) return false; // Only flag if inside paragraph
+                    if (element.closest('p')) {
+                        issues.push('missing underline decoration');
+                    }
                 }
 
                 // Check for non-library blue color (common violation)
                 if (color === 'rgb(0, 0, 255)' || color === 'blue') {
-                    return false; // Non-library color detected
+                    issues.push(`using non-library blue color (${color})`);
                 }
 
-                // Check 3: Focus state (Rule 64 merged)
+                // Check 3: Focus state
                 if (element.style.outline === 'none' && !element.style.boxShadow) {
-                    // This is hard to check statically as focus state is pseudo-class.
-                    // We can only check if outline is explicitly removed inline.
-                    return false;
+                    issues.push('outline removed without alternative focus indicator');
+                }
+
+                if (issues.length > 0) {
+                    return {
+                        passed: false,
+                        reason: `Link found with: ${issues.join(', ')}`,
+                        howToFix: 'Apply library link styles from Platforms Code with proper underline, color, and focus states'
+                    };
                 }
             }
-            return true;
+            return { passed: true };
         },
         severity: 'medium'
     },
