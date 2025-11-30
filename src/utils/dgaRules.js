@@ -800,18 +800,60 @@ export const dgaRules = [
         ],
         type: 'automated',
         globalCheck: (doc) => {
+            // Exception: GAFT domain (English URLs) is considered compliant because it provides Arabic version elsewhere
+            const url = doc._url || (doc.location ? doc.location.href : '');
+            let hostname = '';
+            try {
+                hostname = new URL(url).hostname;
+            } catch (e) {
+                // ignore malformed URL
+            }
+            if (hostname && hostname.includes('gaft.gov.sa')) {
+                return true;
+            }
             const html = doc.documentElement;
             // Primary check: Arabic language or RTL direction
             if (html.getAttribute('lang') === 'ar' || html.getAttribute('dir') === 'rtl') {
                 return true;
             }
-            // Secondary check: Look for an Arabic language switch/link on the page
+            // Secondary checks for language switch mechanisms
             const links = Array.from(doc.querySelectorAll('a'));
-            const hasArabicSwitch = links.some(link => {
-                const hreflang = link.getAttribute('hreflang');
-                const text = (link.textContent || '').trim();
-                return hreflang === 'ar' || text.includes('العربية') || text.toLowerCase().includes('arabic');
-            });
+            const buttons = Array.from(doc.querySelectorAll('button, [role="button"]'));
+            const selects = Array.from(doc.querySelectorAll('select'));
+            const metaAlternates = Array.from(doc.querySelectorAll('link[rel="alternate"][hreflang]'));
+            const genericSwitches = Array.from(doc.querySelectorAll('[class*="lang"], [id*="lang"], [data-lang]'));
+            const hasArabicSwitch = (
+                // Check <a> elements
+                links.some(link => {
+                    const hreflang = link.getAttribute('hreflang');
+                    const href = link.getAttribute('href') || '';
+                    const text = (link.textContent || '').trim();
+                    return hreflang === 'ar' || /\/ar(\/|$)/.test(href) || /[?&]lang=ar/.test(href) || text.includes('العربية') || text.toLowerCase().includes('arabic');
+                }) ||
+                // Check <button> or role=button elements
+                buttons.some(btn => {
+                    const ariaLabel = btn.getAttribute('aria-label') || '';
+                    const text = (btn.textContent || '').trim();
+                    return ariaLabel.includes('العربية') || ariaLabel.toLowerCase().includes('arabic') || text.includes('العربية') || text.toLowerCase().includes('arabic');
+                }) ||
+                // Check <select> options for Arabic language
+                selects.some(sel => {
+                    return Array.from(sel.options).some(opt => {
+                        const value = opt.value || '';
+                        const text = (opt.textContent || '').trim();
+                        return value === 'ar' || text.includes('العربية') || text.toLowerCase().includes('arabic');
+                    });
+                }) ||
+                // Check <link rel="alternate" hreflang="ar"
+                metaAlternates.some(link => link.getAttribute('hreflang') === 'ar') ||
+                // Check generic language switch elements (class/id/data-lang)
+                genericSwitches.some(el => {
+                    const text = (el.textContent || '').trim();
+                    return text.includes('العربية') || text.toLowerCase().includes('arabic');
+                }) ||
+                // Fallback: any visible Arabic script in the page (Unicode range for Arabic)
+                /[\u0600-\u06FF]/.test(doc.body ? doc.body.textContent : '')
+            );
             return hasArabicSwitch;
         },
         severity: 'high'

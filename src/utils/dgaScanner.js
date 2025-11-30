@@ -79,6 +79,11 @@ export const scanDocument = (doc, pageUrl = null) => {
         }
     });
 
+    // Attach the URL to the document for rules that need it (e.g., language switch detection)
+    if (pageUrl) {
+        doc._url = pageUrl;
+    }
+
     // Calculate compliance score (automated checks only)
     const totalAutomated = violations.length + passed.length;
     const score = totalAutomated > 0 ? Math.round((passed.length / totalAutomated) * 100) : 100;
