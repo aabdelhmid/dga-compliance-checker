@@ -801,7 +801,18 @@ export const dgaRules = [
         type: 'automated',
         globalCheck: (doc) => {
             const html = doc.documentElement;
-            return html.getAttribute('lang') === 'ar' || html.getAttribute('dir') === 'rtl';
+            // Primary check: Arabic language or RTL direction
+            if (html.getAttribute('lang') === 'ar' || html.getAttribute('dir') === 'rtl') {
+                return true;
+            }
+            // Secondary check: Look for an Arabic language switch/link on the page
+            const links = Array.from(doc.querySelectorAll('a'));
+            const hasArabicSwitch = links.some(link => {
+                const hreflang = link.getAttribute('hreflang');
+                const text = (link.textContent || '').trim();
+                return hreflang === 'ar' || text.includes('العربية') || text.toLowerCase().includes('arabic');
+            });
+            return hasArabicSwitch;
         },
         severity: 'high'
     },
