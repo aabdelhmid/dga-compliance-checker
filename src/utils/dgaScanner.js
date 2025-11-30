@@ -1,4 +1,4 @@
-import { dgaRules } from './dgaRules';
+import { dgaRules } from './dgaRules.js';
 
 /**
  * Scans a document against DGA rules.
@@ -7,6 +7,11 @@ import { dgaRules } from './dgaRules';
  * @returns {Object} - The scan report.
  */
 export const scanDocument = (doc, pageUrl = null) => {
+    // Attach the URL to the document for rules that need it (e.g., language switch detection)
+    if (pageUrl) {
+        doc._url = pageUrl;
+    }
+
     const violations = [];
     const passed = [];
 
@@ -20,7 +25,13 @@ export const scanDocument = (doc, pageUrl = null) => {
 
         if (rule.globalCheck) {
             // Global check (e.g., presence of element)
-            result = rule.globalCheck(doc);
+            try {
+                result = rule.globalCheck(doc);
+            } catch (e) {
+                console.error(`Error in globalCheck for rule ${rule.id}:`, e);
+                result = false;
+            }
+
             if (!result) {
                 violations.push({
                     id: rule.id,
@@ -29,7 +40,7 @@ export const scanDocument = (doc, pageUrl = null) => {
                     category: rule.category,
                     type: rule.type,
                     requirements: rule.requirements,
-                    pageUrl: pageUrl || window.location.href,
+                    pageUrl: pageUrl || (typeof window !== 'undefined' && window.location.href) || '',
                     preview: doc.documentElement ? doc.documentElement.outerHTML.substring(0, 1000) : 'Document Structure Missing'
                 });
             } else {
@@ -47,14 +58,31 @@ export const scanDocument = (doc, pageUrl = null) => {
             let allPass = true;
             let preview = null;
 
-            elements.forEach(element => {
-                if (!rule.check(element)) {
-                    allPass = false;
-                    if (!preview) {
-                        preview = element.outerHTML.substring(0, 1000);
+            if (elements.length > 0) {
+                elements.forEach(element => {
+                    try {
+                        if (!rule.check(element)) {
+                            allPass = false;
+                            if (!preview) {
+                                preview = element.outerHTML.substring(0, 1000);
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`Error in check for rule ${rule.id}:`, e);
+                        allPass = false;
                     }
-                }
-            });
+                });
+            } else {
+                // If selector not found, it might be a failure depending on the rule
+                // But usually selector rules imply "if element exists, check it" OR "element must exist"
+                // For now, if selector finds nothing, we assume pass unless it's a "must exist" rule handled by globalCheck
+                // Actually, many rules are "verify X attribute on Y element". If Y doesn't exist, is it a pass?
+                // Let's assume pass for now unless specific logic says otherwise.
+                // Wait, previous implementation might have handled this differently.
+                // Let's stick to the logic: if elements found, check them. If any fail, rule fails.
+                // If no elements found, rule passes (vacuously true).
+                allPass = true;
+            }
 
             if (!allPass) {
                 violations.push({
@@ -64,7 +92,7 @@ export const scanDocument = (doc, pageUrl = null) => {
                     category: rule.category,
                     type: rule.type,
                     requirements: rule.requirements,
-                    pageUrl: pageUrl || window.location.href,
+                    pageUrl: pageUrl || (typeof window !== 'undefined' && window.location.href) || '',
                     preview: preview
                 });
             } else {
@@ -79,11 +107,6 @@ export const scanDocument = (doc, pageUrl = null) => {
         }
     });
 
-    // Attach the URL to the document for rules that need it (e.g., language switch detection)
-    if (pageUrl) {
-        doc._url = pageUrl;
-    }
-
     // Calculate compliance score (automated checks only)
     const totalAutomated = violations.length + passed.length;
     const score = totalAutomated > 0 ? Math.round((passed.length / totalAutomated) * 100) : 100;
@@ -93,7 +116,7 @@ export const scanDocument = (doc, pageUrl = null) => {
         violations,
         passed,
         totalChecks: totalAutomated,
-        pageUrl: pageUrl || window.location.href
+        pageUrl: pageUrl || (typeof window !== 'undefined' && window.location.href) || ''
     };
 };
 
@@ -106,9 +129,13 @@ export const scanUrl = async (url) => {
         const urlObj = new URL(url);
         const isLocalhost = urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1';
 
-        // Use proxy only for external URLs to avoid CORS issues
-        // For localhost, fetch directly (assuming same-origin or CORS enabled)
-        const fetchUrl = isLocalhost ? url : `/api/proxy?url=${encodeURIComponent(url)}`;
+        // Determine fetch URL based on environment
+        const isNode = typeof window === 'undefined';
+        const fetchUrl = isNode
+            ? url // In Node (e.g., CLI tests) fetch directly
+            : isLocalhost
+                ? url
+                : `/api/proxy?url=${encodeURIComponent(url)}`;
 
         const response = await fetch(fetchUrl);
 
@@ -116,7 +143,7 @@ export const scanUrl = async (url) => {
             throw new Error('Failed to fetch the URL');
         }
 
-        const html = await response.text();
+        const text = await response.text();
 
         // Parse HTML
         const parser = new DOMParser();

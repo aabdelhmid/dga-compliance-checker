@@ -161,10 +161,10 @@ const DGACompliance = () => {
             <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)', marginBottom: '2rem' }}>
                 {/* Scan Mode Toggle */}
                 <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <label style={{ fontSize: '0.95rem', fontWeight: '500', color: 'var(--text)' }}>
+                    <label style={{ fontSize: '0.95rem', fontWeight: '500', color: 'var(--text-main)' }}>
                         Scan Mode:
                     </label>
-                    <div style={{ display: 'flex', gap: '0.5rem', backgroundColor: '#F3F4F6', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', backgroundColor: 'var(--gray-100)', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
                         <button
                             type="button"
                             onClick={() => setScanMode('single')}
@@ -173,7 +173,7 @@ const DGACompliance = () => {
                                 borderRadius: 'var(--radius-md)',
                                 border: 'none',
                                 backgroundColor: scanMode === 'single' ? 'var(--primary)' : 'transparent',
-                                color: scanMode === 'single' ? 'white' : 'var(--text)',
+                                color: scanMode === 'single' ? 'white' : 'var(--text-main)',
                                 fontWeight: scanMode === 'single' ? 'bold' : 'normal',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s'
@@ -189,7 +189,7 @@ const DGACompliance = () => {
                                 borderRadius: 'var(--radius-md)',
                                 border: 'none',
                                 backgroundColor: scanMode === 'full' ? 'var(--primary)' : 'transparent',
-                                color: scanMode === 'full' ? 'white' : 'var(--text)',
+                                color: scanMode === 'full' ? 'white' : 'var(--text-main)',
                                 fontWeight: scanMode === 'full' ? 'bold' : 'normal',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s'
@@ -234,9 +234,9 @@ const DGACompliance = () => {
                     <div style={{
                         marginTop: '1rem',
                         padding: '1rem',
-                        backgroundColor: '#EFF6FF',
+                        backgroundColor: 'var(--info-50)',
                         borderRadius: 'var(--radius-md)',
-                        border: '1px solid #3B82F6',
+                        border: '1px solid var(--info-500)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.75rem'
@@ -244,16 +244,16 @@ const DGACompliance = () => {
                         <div style={{
                             width: '20px',
                             height: '20px',
-                            border: '3px solid #3B82F6',
+                            border: '3px solid var(--info-500)',
                             borderTopColor: 'transparent',
                             borderRadius: '50%',
                             animation: 'spin 1s linear infinite'
                         }}></div>
-                        <span style={{ color: '#1E40AF', fontWeight: '500' }}>{progress.message}</span>
+                        <span style={{ color: 'var(--info-800)', fontWeight: '500' }}>{progress.message}</span>
                     </div>
                 )}
                 {error && (
-                    <div style={{ marginTop: '1rem', color: '#EF4444', backgroundColor: '#FEF2F2', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ marginTop: '1rem', color: 'var(--error-600)', backgroundColor: 'var(--error-50)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
                         {error}
                     </div>
                 )}
@@ -281,14 +281,14 @@ const DGACompliance = () => {
                                 <span style={{
                                     fontSize: '1.25rem',
                                     fontWeight: 'bold',
-                                    color: report.status === 'Compliant' ? '#059669' : report.status === 'Partially Compliant' ? '#D97706' : '#DC2626'
+                                    color: report.status === 'Compliant' ? 'var(--success-600)' : report.status === 'Partially Compliant' ? 'var(--warning-600)' : 'var(--error-600)'
                                 }}>
                                     {report.status}
                                 </span>
                                 <span style={{ color: 'var(--text-muted)' }}>|</span>
                                 <span>{report.passed.filter(r => r.type === 'automated').length} Passed</span>
                                 <span style={{ color: 'var(--text-muted)' }}>|</span>
-                                <span style={{ color: '#DC2626' }}>{report.violations.filter(v => v.type === 'automated').length} Violations</span>
+                                <span style={{ color: 'var(--error-600)' }}>{report.violations.filter(v => v.type === 'automated').length} Violations</span>
                             </div>
                             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
                                 * Score based on automated checks only. Please complete the manual checklist below.
@@ -298,7 +298,7 @@ const DGACompliance = () => {
                             width: '100px',
                             height: '100px',
                             borderRadius: '50%',
-                            border: `8px solid ${report.score >= 70 ? (report.score === 100 ? '#059669' : '#D97706') : '#DC2626'}`,
+                            border: `8px solid ${report.score >= 70 ? (report.score === 100 ? 'var(--success-600)' : 'var(--warning-600)') : 'var(--error-600)'}`,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -318,27 +318,27 @@ const DGACompliance = () => {
                     {/* Multi-Page Statistics */}
                     {report.totalPages && report.totalPages > 1 && (
                         <div style={{
-                            backgroundColor: '#F0F9FF',
+                            backgroundColor: 'var(--info-50)',
                             padding: '1.5rem',
                             borderRadius: 'var(--radius-md)',
                             marginBottom: '2rem',
-                            border: '1px solid #0EA5E9'
+                            border: '1px solid var(--info-500)'
                         }}>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#0369A1' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--info-700)' }}>
                                 📊 Multi-Page Scan Summary
                             </h3>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
                                 <div>
                                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Total Pages</div>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#0369A1' }}>{report.totalPages}</div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--info-700)' }}>{report.totalPages}</div>
                                 </div>
                                 <div>
                                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Pages with Violations</div>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#DC2626' }}>{report.pagesWithViolations || 0}</div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--error-600)' }}>{report.pagesWithViolations || 0}</div>
                                 </div>
                                 <div>
                                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Total Violations</div>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#DC2626' }}>{report.violations.length}</div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--error-600)' }}>{report.violations.length}</div>
                                 </div>
                             </div>
                         </div>
@@ -347,14 +347,14 @@ const DGACompliance = () => {
                     {/* Comparison Mode Indicator */}
                     {report.comparisonMode && (
                         <div style={{
-                            backgroundColor: '#FEF3C7',
+                            backgroundColor: 'var(--warning-100)',
                             padding: '1rem',
                             borderRadius: 'var(--radius-md)',
                             marginBottom: '2rem',
-                            border: '1px solid #F59E0B'
+                            border: '1px solid var(--warning-500)'
                         }}>
-                            <strong style={{ color: '#92400E' }}>🔍 Comparison Mode Active:</strong>
-                            <span style={{ color: '#78350F', marginLeft: '0.5rem' }}>
+                            <strong style={{ color: 'var(--warning-800)' }}>🔍 Comparison Mode Active:</strong>
+                            <span style={{ color: 'var(--warning-900)', marginLeft: '0.5rem' }}>
                                 Filtered out {report.baselineFiltered} violation(s) also found on dga.gov.sa
                             </span>
                         </div>
@@ -371,7 +371,7 @@ const DGACompliance = () => {
                             {
                                 report.violations.length > 0 ? (
                                     <div>
-                                        <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: 'var(--danger)' }}>
+                                        <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: 'var(--error-600)' }}>
                                             ❌ Violations Found ({report.violations.length} unique issues)
                                         </h3>
                                         {report.totalViolationsBeforeDedup && report.totalViolationsBeforeDedup > report.violations.length && (
@@ -382,16 +382,16 @@ const DGACompliance = () => {
                                         <div style={{ display: 'grid', gap: '1rem' }}>
                                             {report.violations.map((violation, index) => (
                                                 <details key={index} style={{
-                                                    backgroundColor: '#FEE2E2',
-                                                    border: '1px solid #EF4444',
+                                                    backgroundColor: 'var(--error-50)',
+                                                    border: '1px solid var(--error-500)',
                                                     borderRadius: 'var(--radius-md)',
                                                     padding: '1.5rem',
                                                     cursor: 'pointer'
                                                 }}>
-                                                    <summary style={{ fontWeight: 'bold', color: '#991B1B', marginBottom: '0.5rem', cursor: 'pointer' }}>
+                                                    <summary style={{ fontWeight: 'bold', color: 'var(--error-800)', marginBottom: '0.5rem', cursor: 'pointer' }}>
                                                         Rule #{violation.id}: {violation.description}
                                                     </summary>
-                                                    <div style={{ marginTop: '1rem', paddingLeft: '1rem', borderLeft: '3px solid #EF4444' }}>
+                                                    <div style={{ marginTop: '1rem', paddingLeft: '1rem', borderLeft: '3px solid var(--error-500)' }}>
                                                         <p style={{ marginBottom: '0.75rem' }}>
                                                             <strong>Category:</strong> {violation.category} | <strong>Severity:</strong> {violation.severity}
                                                         </p>
@@ -431,17 +431,17 @@ const DGACompliance = () => {
                                                             </p>
                                                             {violation.preview ? (
                                                                 <div style={{
-                                                                    backgroundColor: '#F3F4F6',
+                                                                    backgroundColor: 'var(--gray-100)',
                                                                     padding: '1rem',
                                                                     borderRadius: '6px',
-                                                                    border: '1px solid #D1D5DB',
+                                                                    border: '1px solid var(--gray-300)',
                                                                     fontFamily: 'monospace',
                                                                     fontSize: '0.8rem',
                                                                     overflowX: 'auto',
                                                                     maxHeight: '150px',
                                                                     overflowY: 'auto',
                                                                     whiteSpace: 'pre-wrap',
-                                                                    color: '#374151'
+                                                                    color: 'var(--gray-700)'
                                                                 }}>
                                                                     {violation.preview}
                                                                 </div>
@@ -470,9 +470,9 @@ const DGACompliance = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div style={{ backgroundColor: '#D1FAE5', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid #10B981' }}>
-                                        <h3 style={{ color: '#065F46', fontWeight: 'bold', marginBottom: '0.5rem' }}>✅ All Automated Checks Passed!</h3>
-                                        <p style={{ color: '#047857' }}>No violations detected in automated compliance checks.</p>
+                                    <div style={{ backgroundColor: 'var(--success-100)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--success-500)' }}>
+                                        <h3 style={{ color: 'var(--success-800)', fontWeight: 'bold', marginBottom: '0.5rem' }}>✅ All Automated Checks Passed!</h3>
+                                        <p style={{ color: 'var(--success-700)' }}>No violations detected in automated compliance checks.</p>
                                     </div>
                                 )
                             }
@@ -484,7 +484,7 @@ const DGACompliance = () => {
 
                     {/* Manual Verification Checklist */}
                     <div style={{ marginTop: '3rem' }}>
-                        <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '1.5rem', borderBottom: '2px solid var(--warning)', paddingBottom: '0.5rem' }}>
+                        <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '1.5rem', borderBottom: '2px solid var(--warning-500)', paddingBottom: '0.5rem' }}>
                             ✋ Remaining Manual Verification Items
                         </h2>
                         <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
@@ -494,7 +494,7 @@ const DGACompliance = () => {
                         <div style={{ overflowX: 'auto', backgroundColor: 'white', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
-                                    <tr style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid var(--border)' }}>
+                                    <tr style={{ backgroundColor: 'var(--gray-50)', borderBottom: '1px solid var(--border)' }}>
                                         <th style={{ padding: '1rem', textAlign: 'left', width: '60px' }}>ID</th>
                                         <th style={{ padding: '1rem', textAlign: 'left', width: '120px' }}>Category</th>
                                         <th style={{ padding: '1rem', textAlign: 'left', width: '200px' }}>Requirement</th>
