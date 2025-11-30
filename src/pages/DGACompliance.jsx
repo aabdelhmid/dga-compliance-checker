@@ -9,28 +9,38 @@ const DGACompliance = () => {
     const [report, setReport] = useState(null);
     const [error, setError] = useState('');
     const [scanMode, setScanMode] = useState('single'); // 'single' or 'full'
+    const [comparisonMode, setComparisonMode] = useState(false);
     const [progress, setProgress] = useState({ phase: '', message: '' });
 
     const handleScan = async (e) => {
         e.preventDefault();
-        console.log('handleScan called, scanMode:', scanMode);
+        console.log('handleScan called, scanMode:', scanMode, 'comparisonMode:', comparisonMode);
         setLoading(true);
         setError('');
         setReport(null);
         setProgress({ phase: '', message: '' });
 
         try {
+            let result;
+
+            // If comparison mode is enabled, scan dga.gov.sa first
+            let baselineViolationIds = new Set();
+            if (comparisonMode) {
+                setProgress({ phase: 'baseline', message: 'Scanning dga.gov.sa for baseline...' });
+                const baselineResult = await scanUrl('https://dga.gov.sa/ar');
+                baselineViolationIds = new Set(baselineResult.violations.map(v => v.id));
+                console.log('Baseline violations:', baselineViolationIds);
+            }
+
             if (scanMode === 'single') {
                 // Single page scan
                 console.log('Running single page scan');
                 setProgress({ phase: 'scanning', message: 'Scanning page...' });
 
                 if (url === window.location.href) {
-                    const result = scanDocument(document);
-                    setReport(result);
+                    result = scanDocument(document);
                 } else {
-                    const result = await scanUrl(url);
-                    setReport(result);
+                    result = await scanUrl(url);
                 }
             } else {
                 // Full website scan
@@ -51,7 +61,7 @@ const DGACompliance = () => {
                 console.log('Discovered URLs:', urls);
                 setProgress({ phase: 'scanning', message: `Scanning ${urls.length} pages...` });
 
-                const result = await scanMultipleUrls(urls, (progress) => {
+                result = await scanMultipleUrls(urls, (progress) => {
                     setProgress({
                         phase: 'scanning',
                         message: `Scanned ${progress.scanned}/${progress.total} pages...`
@@ -59,8 +69,24 @@ const DGACompliance = () => {
                 });
 
                 console.log('Multi-page scan result:', result);
-                setReport(result);
             }
+
+            // Filter violations if comparison mode is enabled
+            if (comparisonMode && baselineViolationIds.size > 0) {
+                const filteredViolations = result.violations.filter(v => !baselineViolationIds.has(v.id));
+                const removedCount = result.violations.length - filteredViolations.length;
+
+                result = {
+                    ...result,
+                    violations: filteredViolations,
+                    comparisonMode: true,
+                    baselineFiltered: removedCount
+                };
+
+                console.log(`Filtered ${removedCount} violations found in baseline`);
+            }
+
+            setReport(result);
         } catch (err) {
             console.error('Scan error:', err);
             setError(err.message);
@@ -172,6 +198,20 @@ const DGACompliance = () => {
                             Full Website (up to 50 pages)
                         </button>
                     </div>
+                </div>
+
+                {/* Comparison Mode Toggle */}
+                <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <input
+                        type="checkbox"
+                        id="comparisonMode"
+                        checked={comparisonMode}
+                        onChange={(e) => setComparisonMode(e.target.checked)}
+                        style={{ cursor: 'pointer' }}
+                    />
+                    <label htmlFor="comparisonMode" style={{ fontSize: '0.9rem', cursor: 'pointer' }}>
+                        🔍 Comparison Mode (Filter out violations also found on dga.gov.sa)
+                    </label>
                 </div>
 
                 <form onSubmit={handleScan} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -304,6 +344,22 @@ const DGACompliance = () => {
                         </div>
                     )}
 
+                    {/* Comparison Mode Indicator */}
+                    {report.comparisonMode && (
+                        <div style={{
+                            backgroundColor: '#FEF3C7',
+                            padding: '1rem',
+                            borderRadius: 'var(--radius-md)',
+                            marginBottom: '2rem',
+                            border: '1px solid #F59E0B'
+                        }}>
+                            <strong style={{ color: '#92400E' }}>🔍 Comparison Mode Active:</strong>
+                            <span style={{ color: '#78350F', marginLeft: '0.5rem' }}>
+                                Filtered out {report.baselineFiltered} violation(s) also found on dga.gov.sa
+                            </span>
+                        </div>
+                    )}
+
                     {/* Automated Scan Results */}
                     {report && report.violations && (
                         <div style={{ marginBottom: '3rem' }}>
@@ -315,9 +371,14 @@ const DGACompliance = () => {
                             {
                                 report.violations.length > 0 ? (
                                     <div>
-                                        <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: 'var(--danger)' }}>
-                                            ❌ Violations Found ({report.violations.length})
+                                        <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: 'var(--danger)' }}>
+                                            ❌ Violations Found ({report.violations.length} unique issues)
                                         </h3>
+                                        {report.totalViolationsBeforeDedup && report.totalViolationsBeforeDedup > report.violations.length && (
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                                                ℹ️ Deduplicated from {report.totalViolationsBeforeDedup} total occurrences (same components across pages)
+                                            </p>
+                                        )}
                                         <div style={{ display: 'grid', gap: '1rem' }}>
                                             {report.violations.map((violation, index) => (
                                                 <details key={index} style={{
@@ -334,18 +395,24 @@ const DGACompliance = () => {
                                                         <p style={{ marginBottom: '0.75rem' }}>
                                                             <strong>Category:</strong> {violation.category} | <strong>Severity:</strong> {violation.severity}
                                                         </p>
-                                                        {violation.pageUrl && (
-                                                            <p style={{ marginBottom: '0.75rem' }}>
-                                                                <strong>Violated Page:</strong>{' '}
-                                                                <a
-                                                                    href={violation.pageUrl}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    style={{ color: 'var(--primary)', textDecoration: 'underline' }}
-                                                                >
-                                                                    {violation.pageUrl}
-                                                                </a>
-                                                            </p>
+                                                        {violation.affectedPages && violation.affectedPages.length > 0 && (
+                                                            <div style={{ marginBottom: '0.75rem' }}>
+                                                                <strong>Affected Pages ({violation.affectedPages.length}):</strong>
+                                                                <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem', maxHeight: '150px', overflowY: 'auto' }}>
+                                                                    {violation.affectedPages.map((pageUrl, idx) => (
+                                                                        <li key={idx} style={{ marginBottom: '0.25rem' }}>
+                                                                            <a
+                                                                                href={pageUrl}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                style={{ color: 'var(--primary)', textDecoration: 'underline', fontSize: '0.85rem' }}
+                                                                            >
+                                                                                {pageUrl}
+                                                                            </a>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
                                                         )}
                                                         <div style={{ marginBottom: '0.75rem' }}>
                                                             <strong>Requirements:</strong>

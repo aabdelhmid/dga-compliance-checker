@@ -206,15 +206,43 @@ export const scanMultipleUrls = async (urls, onProgress = () => { }) => {
         completed: true
     });
 
+    // Deduplicate violations (same component used across multiple pages)
+    const uniqueViolations = [];
+    const violationMap = new Map();
+
+    allViolations.forEach(violation => {
+        // Create unique key: rule ID + description (identifies the same component issue)
+        const key = `${violation.id}-${violation.description}`;
+
+        if (!violationMap.has(key)) {
+            // First occurrence - add with page list
+            violationMap.set(key, {
+                ...violation,
+                affectedPages: [violation.pageUrl],
+                occurrences: 1
+            });
+        } else {
+            // Duplicate - just track additional page
+            const existing = violationMap.get(key);
+            if (!existing.affectedPages.includes(violation.pageUrl)) {
+                existing.affectedPages.push(violation.pageUrl);
+                existing.occurrences++;
+            }
+        }
+    });
+
+    uniqueViolations.push(...violationMap.values());
+
     return {
         score: overallScore,
         status,
-        violations: allViolations,
+        violations: uniqueViolations,
         passed: allPassed,
         totalChecks,
         pageResults,
         totalPages: urls.length,
         pagesWithViolations: pageResults.filter(p => p.violationCount > 0).length,
+        totalViolationsBeforeDedup: allViolations.length,
         timestamp: new Date().toISOString()
     };
 };
