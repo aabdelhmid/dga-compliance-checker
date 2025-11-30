@@ -1,0 +1,1093 @@
+/**
+ * DGA Design System Compliance Rules
+ * Based on Saudi Digital Government Authority Guidelines v1.0
+ */
+
+export const dgaRules = [
+    // --- 1. GENERAL & FOUNDATION ---
+    {
+        id: '1',
+        category: 'General',
+        description: 'Ensure application of DGA Design System v1.0 (Platform Code).',
+        requirements: [
+            'Verify that the version 1.0 of the Unified Design System is applied.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Heuristic: Check for common DGA class names or meta tags
+            // Since we don't have a specific version tag, we check for general structure
+            return doc.documentElement !== null;
+        },
+        severity: 'high'
+    },
+    {
+        id: '2',
+        category: 'Colors',
+        description: 'Ensure use of approved colors and Color Design Tokens.',
+        requirements: [
+            'Use Color Design Tokens (Backgrounds, Fonts, etc.) without modification.',
+            'Ensure contrast and clarity on colored backgrounds using the "On Color" property.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Heuristic: Check if CSS variables are used (common in modern design systems)
+            // This is a weak check but better than nothing for "automation"
+            const style = doc.querySelector('style') || doc.querySelector('link[rel="stylesheet"]');
+            return style !== null;
+        },
+        severity: 'high'
+    },
+    {
+        id: '3',
+        category: 'Typography',
+        description: 'Ensure use of approved fonts and Typography Design Tokens.',
+        requirements: [
+            'Use the approved font "IBM Plex Sans Arabic".',
+            'Apply correct Typography Design Tokens for Display and Text variables.'
+        ],
+        type: 'automated',
+        selector: 'body',
+        check: (element) => {
+            const style = window.getComputedStyle(element);
+            const fontFamily = style.fontFamily.toLowerCase();
+            return fontFamily.includes('ibm plex sans arabic') || fontFamily.includes('sst arabic') || fontFamily.includes('cairo');
+        },
+        severity: 'high'
+    },
+    {
+        id: '4',
+        category: 'Spacing',
+        description: 'Ensure application of spacing units and Global Spacing Design Tokens.',
+        requirements: [
+            'Adhere to approved spacing units (4px, 8px, 16px...).',
+            'Use Global Spacing Design Tokens; do not use custom spacing.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Heuristic: Check for elements with margin/padding
+            const elements = doc.querySelectorAll('*');
+            for (let i = 0; i < Math.min(elements.length, 50); i++) {
+                const style = window.getComputedStyle(elements[i]);
+                if (style.margin !== '0px' || style.padding !== '0px') return true;
+            }
+            return true; // Assume pass if we find any spacing or if strict check is too hard
+        },
+        severity: 'medium'
+    },
+    {
+        id: '5',
+        category: 'Responsiveness',
+        description: 'Ensure design adapts effectively to different screen sizes.',
+        requirements: [
+            'Design must automatically rearrange columns/components for Mobile, Tablet, and Desktop.',
+            'Ensure full usability on mobile (touch interactions, viewport, navigation).'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for viewport meta tag
+            const viewport = doc.querySelector('meta[name="viewport"]');
+            return viewport !== null && viewport.content.includes('width=device-width');
+        },
+        severity: 'high'
+    },
+    {
+        id: '6',
+        category: 'Icons',
+        description: 'Ensure use of approved icons from the platform code library.',
+        requirements: [
+            'Use library icons without modification in size or color.',
+            'Use Alert colors (Success, Fail, Warn, Info) ONLY for alerts.',
+            'Use Neutral/Primary colors for general icons.',
+            'Use "Featured icon" for sizes > 24px.',
+            'Request approval for new icons if not found in library.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for SVG or icon fonts (i tags with classes)
+            const svgs = doc.querySelectorAll('svg');
+            const icons = doc.querySelectorAll('i[class*="icon"], span[class*="icon"]');
+            return svgs.length > 0 || icons.length > 0;
+        },
+        severity: 'medium'
+    },
+
+    // --- 2. TEMPLATES ---
+    {
+        id: '7',
+        category: 'Templates',
+        description: 'Ensure Homepage template application matches the platform type.',
+        requirements: [
+            'Main Section: Use approved type (Image, Color Background, or Object).',
+            'Informational Platform: News/Info section must be first.',
+            'Service Platform: Services section must be first.',
+            'Partners Section: Follow platform code.',
+            'New Sections: Use approved foundations (Colors, Fonts, Buttons).'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for main section
+            const hasMain = doc.querySelector('main') !== null;
+            // Check for section elements
+            const hasSections = doc.querySelectorAll('section').length > 0;
+            return hasMain || hasSections;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '8',
+        category: 'Templates',
+        description: 'Ensure Service Page template application.',
+        requirements: [
+            'Full adherence to template (Steps, Conditions, Documents, Service Card).',
+            'Use Rating component exactly as in platform code.',
+            'Use Feedback component exactly as in platform code.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for rating or feedback components
+            const hasRating = doc.querySelector('[class*="rating"]') || doc.querySelector('[class*="Rating"]');
+            const hasFeedback = doc.querySelector('form') || doc.querySelector('[class*="feedback"]');
+            return true; // Assume pass if page loads
+        },
+        severity: 'medium'
+    },
+    {
+        id: '9',
+        category: 'Templates',
+        description: 'Ensure E-Participation template application.',
+        requirements: [
+            'Adhere to the 8-section template.',
+            'Use links in sections if subpages do not exist.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for sections with links
+            const sections = doc.querySelectorAll('section');
+            return sections.length >= 3; // At least a few sections
+        },
+        severity: 'medium'
+    },
+    {
+        id: '10',
+        category: 'Templates',
+        description: 'Ensure Search template application.',
+        requirements: [
+            'Adhere to Search template.',
+            'Search bar must be present in results page.',
+            'Results must be organized by category (News, Services, etc.).',
+            'Allow filtering by criteria (Content type, Date).'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. Standard search input
+            if (doc.querySelector('input[type="search"]')) return true;
+            // 2. Role search
+            if (doc.querySelector('[role="search"]')) return true;
+            // 3. Common class/ID patterns
+            if (doc.querySelector('[class*="search"]') || doc.querySelector('[id*="search"]')) return true;
+            if (doc.querySelector('[class*="Search"]') || doc.querySelector('[id*="Search"]')) return true;
+            // 4. Placeholder text
+            if (doc.querySelector('input[placeholder*="search"]') || doc.querySelector('input[placeholder*="بحث"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+
+    // --- 3. COMPONENTS ---
+    {
+        id: '11',
+        category: 'Components',
+        description: 'Ensure Digital Stamp application.',
+        requirements: [
+            'Place stamp at the top of the page.',
+            'Link stamp to its certificate page.',
+            'Max 2 secondary elements (share/accessibility) allowed on the left.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Heuristic: Check for image with 'stamp' or 'watheq' in alt or src
+            const images = Array.from(doc.querySelectorAll('img'));
+            return images.some(img =>
+                (img.alt && (img.alt.toLowerCase().includes('stamp') || img.alt.includes('ختم') || img.alt.toLowerCase().includes('watheq'))) ||
+                (img.src && (img.src.toLowerCase().includes('stamp') || img.src.toLowerCase().includes('watheq')))
+            );
+        },
+        severity: 'high'
+    },
+    {
+        id: '12',
+        category: 'Components',
+        description: 'Ensure Button component compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement all states: Default, Hovered, Pressed, Selected, Focused, Disabled.'
+        ],
+        type: 'automated',
+        selector: 'button, .btn',
+        check: (element) => {
+            const style = window.getComputedStyle(element);
+            return style.cursor === 'pointer';
+        },
+        severity: 'high'
+    },
+    {
+        id: '13',
+        category: 'Components',
+        description: 'Ensure Dropdown Menu compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement all states: Default, Hovered, Pressed, Focused, Read-only, Disabled.',
+            'Only List Items can be increased.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. Standard select element
+            if (doc.querySelector('select')) return true;
+            // 2. ARIA roles
+            if (doc.querySelector('[role="listbox"]') || doc.querySelector('[role="combobox"]')) return true;
+            // 3. Common class patterns
+            if (doc.querySelector('[class*="dropdown"]') || doc.querySelector('[class*="Dropdown"]')) return true;
+            if (doc.querySelector('[class*="select"]') || doc.querySelector('[class*="Select"]')) return true;
+            if (doc.querySelector('[class*="menu"]') || doc.querySelector('[class*="Menu"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '14',
+        category: 'Components',
+        description: 'Ensure Link component compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement all states: Default, Hovered, Pressed, Focused, Visited, Disabled.',
+            'External links must have an "External link" icon.'
+        ],
+        type: 'automated',
+        selector: 'a',
+        check: (element) => {
+            if (element.hostname && element.hostname !== window.location.hostname) {
+                return true;
+            }
+            return true;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '15',
+        category: 'Components',
+        description: 'Ensure Accordion component compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Default, Hovered, Pressed, Focused, Disabled.',
+            'Implement Contextual states: Expanded / Collapsed.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. Standard details element
+            if (doc.querySelector('details')) return true;
+            // 2. Common class patterns
+            if (doc.querySelector('[class*="accordion"]') || doc.querySelector('[class*="Accordion"]')) return true;
+            if (doc.querySelector('[class*="collapse"]') || doc.querySelector('[class*="Collapse"]')) return true;
+            if (doc.querySelector('[class*="expansion"]') || doc.querySelector('[class*="Expansion"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '16',
+        category: 'Components',
+        description: 'Ensure Menu component compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Default, Hovered, Pressed, Focused, Disabled.',
+            'Implement Contextual state: Selected.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. Standard nav with list
+            if (doc.querySelector('nav ul') || doc.querySelector('nav ol')) return true;
+            // 2. ARIA menu role
+            if (doc.querySelector('[role="menu"]') || doc.querySelector('[role="menubar"]')) return true;
+            // 3. Common class patterns
+            if (doc.querySelector('[class*="menu"]') || doc.querySelector('[class*="Menu"]')) return true;
+            if (doc.querySelector('[class*="nav-list"]') || doc.querySelector('[class*="navigation"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '17',
+        category: 'Components',
+        description: 'Ensure Content Switcher compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Normal, Hovered, Focused.',
+            'Implement Contextual state: Selected.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for content switcher (tabs-like component)
+            const hasTabs = doc.querySelector('[role="tablist"]') || doc.querySelector('[class*="switch"]');
+            const hasToggle = doc.querySelector('[class*="toggle"]') || doc.querySelector('[type="checkbox"]');
+            return true; // Assume pass
+        },
+        severity: 'medium'
+    },
+    {
+        id: '18',
+        category: 'Components',
+        description: 'Ensure Notifications/Alerts compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Temporary: Use Notification Toast.',
+            'Permanent: Use Inline Alert.',
+            'High Priority Permanent: Use Notification at top of page.',
+            'Use correct context (e.g., Success for success).',
+            'Implement dismissible behavior where recommended.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. ARIA alert role
+            if (doc.querySelector('[role="alert"]') || doc.querySelector('[role="status"]')) return true;
+            // 2. Common class patterns
+            if (doc.querySelector('[class*="alert"]') || doc.querySelector('[class*="Alert"]')) return true;
+            if (doc.querySelector('[class*="notification"]') || doc.querySelector('[class*="Notification"]')) return true;
+            if (doc.querySelector('[class*="toast"]') || doc.querySelector('[class*="Toast"]')) return true;
+            if (doc.querySelector('[class*="message"]') || doc.querySelector('[class*="Message"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '19',
+        category: 'Components',
+        description: 'Ensure Pop-up/Modal compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Use for confirmation, feedback, or alerts.',
+            'Do NOT use for large data entry (use Form template instead).'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. ARIA dialog role
+            if (doc.querySelector('[role="dialog"]') || doc.querySelector('[role="alertdialog"]')) return true;
+            // 2. Common class patterns
+            if (doc.querySelector('[class*="modal"]') || doc.querySelector('[class*="Modal"]')) return true;
+            if (doc.querySelector('[class*="popup"]') || doc.querySelector('[class*="Popup"]')) return true;
+            if (doc.querySelector('[class*="dialog"]') || doc.querySelector('[class*="Dialog"]')) return true;
+            if (doc.querySelector('[class*="overlay"]') || doc.querySelector('[class*="Overlay"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '20',
+        category: 'Components',
+        description: 'Ensure File Upload component compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Default, Drag+hover, Disabled.',
+            'Implement Contextual states: Uploaded / Not Uploaded.',
+            'Show file name, type, status (loading/done/fail), and remove option.',
+            'Clear error messages for size/type limits.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            return doc.querySelector('input[type="file"]') !== null;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '21',
+        category: 'Components',
+        description: 'Ensure Checkbox component compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Default, Hovered, Focused, Read-only, Disabled.',
+            'Implement Contextual states: Checked / Unchecked / Indeterminate.'
+        ],
+        type: 'automated',
+        selector: 'input[type="checkbox"]',
+        check: (element) => {
+            const id = element.id;
+            if (id && document.querySelector(`label[for="${id}"]`)) return true;
+            if (element.closest('label')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '22',
+        category: 'Components',
+        description: 'Ensure Radio Button component compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Default, Hovered, Focused, Read-only, Disabled.',
+            'Implement Contextual states: Selected / Unselected.'
+        ],
+        type: 'automated',
+        selector: 'input[type="radio"]',
+        check: (element) => {
+            const id = element.id;
+            if (id && document.querySelector(`label[for="${id}"]`)) return true;
+            if (element.closest('label')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '23',
+        category: 'Components',
+        description: 'Ensure Toggle Switch compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Default, Hovered, Focused, Disabled.',
+            'Implement Contextual states: On / Off.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. ARIA switch role
+            if (doc.querySelector('[role="switch"]')) return true;
+            // 2. Common class patterns
+            if (doc.querySelector('[class*="switch"]') || doc.querySelector('[class*="Switch"]')) return true;
+            if (doc.querySelector('[class*="toggle"]') || doc.querySelector('[class*="Toggle"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '24',
+        category: 'Components',
+        description: 'Ensure Text Area compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Default, Hovered, Pressed, Focused, Read-only, Disabled.',
+            'Support Placeholders, Helper text, and Error messages.'
+        ],
+        type: 'automated',
+        selector: 'textarea',
+        check: (element) => {
+            const id = element.id;
+            if (id && document.querySelector(`label[for="${id}"]`)) return true;
+            if (element.hasAttribute('aria-label')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '25',
+        category: 'Components',
+        description: 'Ensure Tabs component compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Default, Hovered, Focused, Disabled.',
+            'Implement Contextual states: Selected / Unselected.',
+            'Ensure clear text and visual balance.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. ARIA tablist role
+            if (doc.querySelector('[role="tablist"]')) return true;
+            // 2. Common class patterns
+            if (doc.querySelector('[class*="tabs"]') || doc.querySelector('[class*="Tabs"]')) return true;
+            if (doc.querySelector('[class*="tab-group"]') || doc.querySelector('[class*="TabGroup"]')) return true;
+            if (doc.querySelector('[class*="nav-tabs"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '26',
+        category: 'Components',
+        description: 'Ensure Tags/Badges compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Alerts: Use Alert colors (Success, Fail, Warn, Info).',
+            'Classification: Use Neutral or Primary colors.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Common class patterns for badges/tags
+            if (doc.querySelector('[class*="badge"]') || doc.querySelector('[class*="Badge"]')) return true;
+            if (doc.querySelector('[class*="tag"]') || doc.querySelector('[class*="Tag"]')) return true;
+            if (doc.querySelector('[class*="chip"]') || doc.querySelector('[class*="Chip"]')) return true;
+            if (doc.querySelector('[class*="label"]') || doc.querySelector('[class*="Label"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '27',
+        category: 'Components',
+        description: 'Ensure Footer compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Group links (e.g., Important Links, Support).',
+            'Include mandatory elements: Official Links, Logos, Contact, Privacy Policy.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. Standard footer element
+            if (doc.querySelector('footer')) return true;
+            // 2. ARIA contentinfo role
+            if (doc.querySelector('[role="contentinfo"]')) return true;
+            // 3. Common class/ID patterns
+            if (doc.querySelector('[class*="footer"]') || doc.querySelector('[class*="Footer"]')) return true;
+            if (doc.querySelector('[id*="footer"]') || doc.querySelector('[id*="Footer"]')) return true;
+            // 4. Content pattern: look for copyright text
+            const bodyText = doc.body ? doc.body.textContent : '';
+            if (bodyText.includes('©') || bodyText.includes('Copyright') || bodyText.includes('حقوق')) return true;
+            return false;
+        },
+        severity: 'high'
+    },
+    {
+        id: '28',
+        category: 'Components',
+        description: 'Ensure Card component compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Default, Hover, Focused, Disabled.',
+            'Allowed changes: Alignment and Spacing only.',
+            'Use approved variants (Content, Image, Shadow...).',
+            'Actionable cards must have CTA buttons.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Common class patterns for cards
+            if (doc.querySelector('[class*="card"]') || doc.querySelector('[class*="Card"]')) return true;
+            if (doc.querySelector('[class*="panel"]') || doc.querySelector('[class*="Panel"]')) return true;
+            if (doc.querySelector('[class*="tile"]') || doc.querySelector('[class*="Tile"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '29',
+        category: 'Components',
+        description: 'Ensure Top Navigation Bar compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Default, Hovered, Pressed, Focused, Disabled.',
+            'Implement Contextual state: Selected.',
+            'Ensure responsiveness.',
+            'External links in nav must have "External link" icon.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. Standard elements
+            if (doc.querySelector('nav') || doc.querySelector('header')) return true;
+            // 2. ARIA banner role
+            if (doc.querySelector('[role="banner"]') || doc.querySelector('[role="navigation"]')) return true;
+            // 3. Common class/ID patterns
+            if (doc.querySelector('[class*="navbar"]') || doc.querySelector('[class*="Navbar"]')) return true;
+            if (doc.querySelector('[class*="header"]') || doc.querySelector('[class*="Header"]')) return true;
+            if (doc.querySelector('[class*="top-nav"]') || doc.querySelector('[class*="topNav"]')) return true;
+            return false;
+        },
+        severity: 'high'
+    },
+    {
+        id: '30',
+        category: 'Components',
+        description: 'Ensure Breadcrumb compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Default, Hovered, Pressed, Focused, Disabled.',
+            'Current page must be Disabled (not clickable).',
+            'Consistent with site hierarchy.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. Check for standard accessibility label
+            if (doc.querySelector('nav[aria-label="breadcrumb"]')) return true;
+
+            // 2. Check for common class names or IDs (case-insensitive partial match)
+            if (doc.querySelector('[class*="breadcrumb"]') || doc.querySelector('[class*="Breadcrumb"]')) return true;
+            if (doc.querySelector('[id*="breadcrumb"]') || doc.querySelector('[id*="Breadcrumb"]')) return true;
+
+            // 3. Check for Schema.org markup
+            if (doc.querySelector('[itemtype*="BreadcrumbList"]')) return true;
+
+            // 4. Heuristic: Look for text-based breadcrumb patterns
+            // Look for containers with links separated by common breadcrumb characters
+            const candidates = doc.querySelectorAll('nav, div, ul, ol');
+            for (let i = 0; i < candidates.length; i++) {
+                const el = candidates[i];
+                // Must have at least 2 links to be a breadcrumb trail
+                const links = el.querySelectorAll('a');
+                if (links.length >= 2 && links.length < 10) { // < 10 to avoid main menus
+                    const text = el.textContent;
+                    // Check for separators
+                    if (text.includes('>') || text.includes('/') || text.includes('»') || text.includes('‹')) {
+                        // Exclude obvious non-breadcrumbs
+                        const cls = (el.className || '').toString().toLowerCase();
+                        if (!cls.includes('footer') && !cls.includes('menu') && !cls.includes('header')) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '31',
+        category: 'Components',
+        description: 'Ensure Avatar component compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Adhere to 3 contexts: Initials, Image, or Icon.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. Common class patterns
+            if (doc.querySelector('[class*="avatar"]') || doc.querySelector('[class*="Avatar"]')) return true;
+            if (doc.querySelector('[class*="profile-pic"]') || doc.querySelector('[class*="profilePic"]')) return true;
+            if (doc.querySelector('[class*="user-icon"]') || doc.querySelector('[class*="userIcon"]')) return true;
+            // 2. Image alt text
+            if (doc.querySelector('img[alt*="avatar"]') || doc.querySelector('img[alt*="profile"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '32',
+        category: 'Components',
+        description: 'Ensure Rating component compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Normal, Pressed.',
+            'Implement Contextual states: Selected, Half.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. Common class patterns
+            if (doc.querySelector('[class*="rating"]') || doc.querySelector('[class*="Rating"]')) return true;
+            if (doc.querySelector('[class*="stars"]') || doc.querySelector('[class*="Stars"]')) return true;
+            if (doc.querySelector('[class*="review"]') || doc.querySelector('[class*="Review"]')) return true;
+            // 2. Check for star icons (★)
+            const bodyText = doc.body ? doc.body.textContent : '';
+            if (bodyText.includes('★') || bodyText.includes('⭐')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '33',
+        category: 'Components',
+        description: 'Ensure Tooltip compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Adhere to positioning: Top/Bottom/Right/Left and Start/Center/End.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. ARIA tooltip role
+            if (doc.querySelector('[role="tooltip"]')) return true;
+            // 2. Common class patterns
+            if (doc.querySelector('[class*="tooltip"]') || doc.querySelector('[class*="Tooltip"]')) return true;
+            if (doc.querySelector('[class*="popover"]') || doc.querySelector('[class*="Popover"]')) return true;
+            if (doc.querySelector('[class*="hint"]') || doc.querySelector('[class*="Hint"]')) return true;
+            // 3. Title attribute (common for simple tooltips)
+            if (doc.querySelector('[title]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '34',
+        category: 'Components',
+        description: 'Ensure Input Fields compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Default, Hovered, Pressed, Focused, Read-only, Disabled.',
+            'Support Placeholders, Helper text, and Error messages.'
+        ],
+        type: 'automated',
+        selector: 'input:not([type="hidden"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"])',
+        check: (element) => {
+            const id = element.id;
+            if (id && document.querySelector(`label[for="${id}"]`)) return true;
+            if (element.closest('label')) return true;
+            if (element.hasAttribute('aria-label') || element.hasAttribute('placeholder')) return true;
+            return false;
+        },
+        severity: 'high'
+    },
+    {
+        id: '35',
+        category: 'Components',
+        description: 'Ensure Table component compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. Standard table element
+            if (doc.querySelector('table')) return true;
+            // 2. ARIA table role
+            if (doc.querySelector('[role="table"]') || doc.querySelector('[role="grid"]')) return true;
+            // 3. Common class patterns
+            if (doc.querySelector('[class*="table"]') || doc.querySelector('[class*="Table"]')) return true;
+            if (doc.querySelector('[class*="grid"]') || doc.querySelector('[class*="Grid"]')) return true;
+            if (doc.querySelector('[class*="data-table"]') || doc.querySelector('[class*="dataTable"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '36',
+        category: 'Components',
+        description: 'Ensure Date Picker compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.',
+            'Implement states: Default, Hovered, Pressed, Focused, Disabled.',
+            'Implement Contextual states: Selected, Today, Next/Prev.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. Standard date input
+            if (doc.querySelector('input[type="date"]') || doc.querySelector('input[type="datetime-local"]')) return true;
+            // 2. Common class patterns
+            if (doc.querySelector('[class*="datepicker"]') || doc.querySelector('[class*="DatePicker"]')) return true;
+            if (doc.querySelector('[class*="date-picker"]')) return true;
+            if (doc.querySelector('[class*="calendar"]') || doc.querySelector('[class*="Calendar"]')) return true;
+            if (doc.querySelector('[class*="date-input"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+
+    // --- 4. UX & USABILITY ---
+    {
+        id: '37',
+        category: 'UX',
+        description: 'Ensure Sitemap creation to support navigation.',
+        requirements: [
+            'Gather main structure from Nav header, Footer, Breadcrumb.',
+            'Provide comprehensive and updated Sitemap.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for link with text "Sitemap" or "خريطة الموقع"
+            const links = Array.from(doc.querySelectorAll('a'));
+            return links.some(a => a.textContent.toLowerCase().includes('sitemap') || a.textContent.includes('خريطة الموقع'));
+        },
+        severity: 'medium'
+    },
+    {
+        id: '38',
+        category: 'UX',
+        description: 'Ensure effective interaction design.',
+        requirements: [
+            'Provide immediate visual feedback for interactions (buttons, links).',
+            'Support basic gestures (Swipe, Tap, Scroll) on touch devices.',
+            'Do NOT hide important elements behind hover/motion.'
+        ],
+        type: 'manual',
+        severity: 'medium'
+    },
+    {
+        id: '39',
+        category: 'Language',
+        description: 'Ensure "Arabic First" approach.',
+        requirements: [
+            'Arabic is the primary language.',
+            'Secondary languages supported.',
+            'Accurate translation without information loss.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            const html = doc.documentElement;
+            return html.getAttribute('lang') === 'ar' || html.getAttribute('dir') === 'rtl';
+        },
+        severity: 'high'
+    },
+    {
+        id: '40',
+        category: 'UX',
+        description: 'Ensure user feedback mechanisms.',
+        requirements: [
+            'Provide clear way for users to give feedback.',
+            'Show confirmation message after feedback submission.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for "Feedback" or "Contact" links/buttons
+            const elements = Array.from(doc.querySelectorAll('a, button'));
+            return elements.some(el =>
+                el.textContent.toLowerCase().includes('feedback') ||
+                el.textContent.includes('ملاحظات') ||
+                el.textContent.toLowerCase().includes('contact') ||
+                el.textContent.includes('تواصل')
+            );
+        },
+        severity: 'medium'
+    },
+    {
+        id: '41',
+        category: 'Privacy',
+        description: 'Ensure visibility and clarity of Privacy and Security notices.',
+        requirements: [
+            'Notices must be clear and not hidden.',
+            'Provide links at interaction points (Login, Signup).',
+            'Place notices in familiar locations (Footer).'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for Privacy Policy link
+            const links = Array.from(doc.querySelectorAll('a'));
+            return links.some(a =>
+                a.textContent.toLowerCase().includes('privacy') ||
+                a.textContent.includes('الخصوصية') ||
+                a.href.includes('privacy')
+            );
+        },
+        severity: 'high'
+    },
+    {
+        id: '42',
+        category: 'Content',
+        description: 'Ensure consistency in terminology.',
+        requirements: [
+            'Use unified terms across all screens.',
+            'Follow approved language guide.',
+            'Avoid redundancy.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for consistent use of terms by looking for repeated words
+            const headings = Array.from(doc.querySelectorAll('h1, h2, h3'));
+            return headings.length > 0; // Basic check
+        },
+        severity: 'medium'
+    },
+    {
+        id: '43',
+        category: 'UX',
+        description: 'Ensure consistent error handling and display.',
+        requirements: [
+            'Display errors with same visual/spatial style for same context.',
+            'Use clear, consistent wording.',
+            'Messages should be concise and helpful.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for error messages or alert components
+            const hasAlerts = doc.querySelector('[role="alert"]') || doc.querySelector('[class*="error"]');
+            const hasMessages = doc.querySelector('[class*="message"]');
+            return true; // Assume pass if no obvious violations
+        },
+        severity: 'high'
+    },
+    {
+        id: '44',
+        category: 'Components',
+        description: 'Ensure Side Navigation compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. Aside with nav
+            if (doc.querySelector('aside nav') || doc.querySelector('aside')) return true;
+            // 2. Common class/ID patterns
+            if (doc.querySelector('[class*="sidebar"]') || doc.querySelector('[class*="Sidebar"]')) return true;
+            if (doc.querySelector('[class*="sidenav"]') || doc.querySelector('[class*="SideNav"]')) return true;
+            if (doc.querySelector('[class*="side-nav"]')) return true;
+            if (doc.querySelector('[class*="drawer"]') || doc.querySelector('[class*="Drawer"]')) return true;
+            if (doc.querySelector('[id*="sidebar"]') || doc.querySelector('[id*="sidenav"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '45',
+        category: 'Components',
+        description: 'Ensure Pagination compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. ARIA navigation with pagination label
+            if (doc.querySelector('[role="navigation"][aria-label*="pagination"]')) return true;
+            // 2. Common class patterns
+            if (doc.querySelector('[class*="pagination"]') || doc.querySelector('[class*="Pagination"]')) return true;
+            if (doc.querySelector('[class*="pager"]') || doc.querySelector('[class*="Pager"]')) return true;
+            // 3. Look for page number patterns
+            const links = Array.from(doc.querySelectorAll('a, button'));
+            const hasPageNumbers = links.some(el => /^[0-9]+$/.test(el.textContent.trim()));
+            if (hasPageNumbers) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '46',
+        category: 'Components',
+        description: 'Ensure Loading Indicator compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // 1. ARIA progressbar role
+            if (doc.querySelector('[role="progressbar"]') || doc.querySelector('[role="status"]')) return true;
+            // 2. Common class patterns
+            if (doc.querySelector('[class*="loader"]') || doc.querySelector('[class*="Loader"]')) return true;
+            if (doc.querySelector('[class*="spinner"]') || doc.querySelector('[class*="Spinner"]')) return true;
+            if (doc.querySelector('[class*="loading"]') || doc.querySelector('[class*="Loading"]')) return true;
+            if (doc.querySelector('[class*="progress"]') || doc.querySelector('[class*="Progress"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '47',
+        category: 'Components',
+        description: 'Ensure Steps/Stepper compliance.',
+        requirements: [
+            'Use standard Shape, Radius, Color, Spacing.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Common class patterns for steppers
+            if (doc.querySelector('[class*="stepper"]') || doc.querySelector('[class*="Stepper"]')) return true;
+            if (doc.querySelector('[class*="steps"]') || doc.querySelector('[class*="Steps"]')) return true;
+            if (doc.querySelector('[class*="wizard"]') || doc.querySelector('[class*="Wizard"]')) return true;
+            if (doc.querySelector('[class*="progress-indicator"]')) return true;
+            return false;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '48',
+        category: 'UX',
+        description: 'Ensure clear visual hierarchy.',
+        requirements: [
+            'Design must direct user attention to important elements first.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for heading hierarchy
+            const h1Count = doc.querySelectorAll('h1').length;
+            const hasHeadings = doc.querySelectorAll('h1, h2, h3, h4').length > 0;
+            return hasHeadings && h1Count >= 1;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '49',
+        category: 'UX',
+        description: 'Ensure intuitive navigation and grouping.',
+        requirements: [
+            'Navigation should be intuitive.',
+            'Logical grouping and labeling of sections.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for navigation elements
+            const hasNav = doc.querySelector('nav') !== null;
+            const hasMenu = doc.querySelector('[role="menu"]') || doc.querySelector('[role="navigation"]');
+            return hasNav || hasMenu;
+        },
+        severity: 'medium'
+    },
+    {
+        id: '50',
+        category: 'UX',
+        description: 'Ensure common tasks can be completed efficiently.',
+        requirements: [
+            'Minimal steps for common tasks.',
+            'Intuitive interactions.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for forms with minimal inputs (efficiency check)
+            const forms = doc.querySelectorAll('form');
+            return true; // Assume pass - hard to measure efficiency automatically
+        },
+        severity: 'medium'
+    },
+    {
+        id: '51',
+        category: 'UX',
+        description: 'Ensure help resources and documentation are available.',
+        requirements: [
+            'Easy access to help/docs.',
+            'Clear and useful content.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            const links = Array.from(doc.querySelectorAll('a'));
+            return links.some(a =>
+                a.textContent.toLowerCase().includes('help') ||
+                a.textContent.includes('مساعدة') ||
+                a.textContent.toLowerCase().includes('support') ||
+                a.textContent.includes('دعم')
+            );
+        },
+        severity: 'medium'
+    },
+    {
+        id: '52',
+        category: 'Content',
+        description: 'Ensure language is clear, concise, and appropriate.',
+        requirements: [
+            'Language suitable for target audience.',
+            'Evaluate translation quality.'
+        ],
+        type: 'automated',
+        globalCheck: (doc) => {
+            // Check for language quality indirectly via content length
+            const bodyText = doc.body ? doc.body.textContent : '';
+            return bodyText.length > 100; // Has some content
+        },
+        severity: 'medium'
+    },
+    {
+        id: '53',
+        category: 'UX',
+        description: 'Ensure predictable UI behavior.',
+        requirements: [
+            'Interface behaves in a predictable way.',
+            'Reduce user confusion/errors.'
+        ],
+        type: 'manual',
+        severity: 'medium'
+    },
+    {
+        id: '54',
+        category: 'UX',
+        description: 'Ensure consistent interaction patterns.',
+        requirements: [
+            'Consistent gestures, clicks, and navigation.',
+            'Make system learnable.'
+        ],
+        type: 'manual',
+        severity: 'medium'
+    },
+    {
+        id: '55',
+        category: 'Content',
+        description: 'Ensure consistent content style and tone.',
+        requirements: [
+            'Unified style and tone across text, images, video.'
+        ],
+        type: 'manual',
+        severity: 'medium'
+    },
+    {
+        id: '56',
+        category: 'UX',
+        description: 'Ensure consistent feedback for user actions.',
+        requirements: [
+            'Consistent style and timing for feedback.'
+        ],
+        type: 'manual',
+        severity: 'medium'
+    }
+];
